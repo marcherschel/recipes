@@ -18,13 +18,26 @@ try:
     try:
         tandoor_tag = subprocess.check_output(['git', 'describe', '--exact-match', '--tags', tandoor_hash], cwd=BASE_DIR).decode().replace('\n', '')
     except BaseException:
+        # not exactly on a tag (e.g. a fork): report the nearest upstream tag + commits on top, e.g. 2.6.15-21-gff7e2961b
+        try:
+            tandoor_tag = subprocess.check_output(['git', 'describe', '--tags'], cwd=BASE_DIR).decode().strip()
+        except BaseException:
+            pass
+
+    # link to the repository the code was actually built from (fork or upstream)
+    repo_url = 'https://github.com/TandoorRecipes/recipes'
+    try:
+        remote = subprocess.check_output(['git', 'remote', 'get-url', 'origin'], cwd=BASE_DIR).decode().strip()
+        if m := re.match(r'^(?:https://|git@)github\.com[/:](.+?)(?:\.git)?$', remote):
+            repo_url = f'https://github.com/{m.group(1)}'
+    except BaseException:
         pass
 
     version_info.append({
         'name': 'Tandoor ',
         'version': re.sub(r'<.*>', '', r),
-        'website': 'https://github.com/TandoorRecipes/recipes',
-        'commit_link': 'https://github.com/TandoorRecipes/recipes/commit/' + r.split('\n')[0].split(' ')[1],
+        'website': repo_url,
+        'commit_link': f'{repo_url}/commit/' + r.split('\n')[0].split(' ')[1],
         'ref': tandoor_hash,
         'branch': tandoor_branch,
         'tag': tandoor_tag
