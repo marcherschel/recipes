@@ -1,3 +1,16 @@
+> [!IMPORTANT]
+> **Fork: Tandoor single tenant** – one shared space for everyone (friends/family), no space-per-user.
+>
+> - **Image:** [`mynttt/tandoor-single-tenant`](https://hub.docker.com/r/mynttt/tandoor-single-tenant) (`latest` or `<upstream-tag>-<n>-g<sha>`), amd64 + arm64.
+> - **`SINGLE_TENANT_ID`** (required): id of the shared space. Unset/invalid → container exits and lists all spaces. Fresh install: use `1`.
+> - **On every start:** all users join that space (`SINGLE_TENANT_DEFAULT_GROUP`, default `user`; existing roles kept) and are removed from all other spaces. Other spaces go to disabled placeholder users, data is kept.
+> - **New users** (LDAP, social, remote user, admin) land in the shared space. Creating spaces is disabled. Only the space owner sees the setup wizard.
+> - **`YOU_ARE_NOT_INVITING_ANYONE_EVER=true`** (optional): no invite links, local signup closed. Users only come from LDAP / social login.
+> - **Release:** push to `main` → GitHub Actions builds and pushes the image (needs `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets).
+> - **Kicking someone:** deactivate the user; removed members are re-added on their next request.
+>
+> Everything below is the upstream README.
+
 <h1 align="center">
   <br>
   <a href="https://tandoor.dev"><img src="https://github.com/vabene1111/recipes/raw/develop/docs/logo_color.svg" height="256px" width="256px"></a>
