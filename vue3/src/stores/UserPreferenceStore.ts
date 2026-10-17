@@ -65,6 +65,15 @@ export const useUserPreferenceStore = defineStore('user_preference_store', () =>
     const router = useRouter()
 
     /**
+     * true if the current user created (owns) the active space, only the owner can run the space setup (welcome/household onboarding)
+     */
+    let isActiveSpaceOwner: ComputedRef<boolean> = computed(() => {
+        const ownerId = activeSpace.value?.createdBy?.id
+        const userId = userSettings.value?.user?.id
+        return ownerId != undefined && userId != undefined && ownerId == userId
+    })
+
+    /**
      * holds the active user space if there is one or null if not
      */
     let activeUserSpace: ComputedRef<null | UserSpace> = computed(() => {
@@ -287,6 +296,7 @@ export const useUserPreferenceStore = defineStore('user_preference_store', () =>
         userSpaces,
         spaces,
         activeUserSpace,
+        isActiveSpaceOwner,
         isAuthenticated,
         isPrintMode,
         initCompleted,

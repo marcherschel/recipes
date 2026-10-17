@@ -183,6 +183,7 @@ import OpenDataImportSettings from "@/components/settings/OpenDataImportSettings
 import {TFood, TInventoryEntry, TInventoryLocation, TKeyword, TMealPlan, TRecipe, TRecipeBook, TShoppingListEntry, TSupermarket, TUnit} from "@/types/Models.ts";
 import ModelEditDialog from "@/components/dialogs/ModelEditDialog.vue";
 import {RouteLocationRaw, useRouter} from "vue-router";
+import {whenever} from "@vueuse/core";
 
 const router = useRouter()
 
@@ -192,7 +193,15 @@ const stepper = ref("1")
 const loading = ref(false)
 
 onMounted(() => {
-    loadSpace()
+    // the welcome wizard configures the space, only its owner is allowed to do that (also guards direct navigation)
+    // waits for the store init triggered by the app shell instead of loading everything twice
+    whenever(() => useUserPreferenceStore().initCompleted, () => {
+        if (!useUserPreferenceStore().isActiveSpaceOwner) {
+            router.replace({name: 'StartPage'})
+        } else {
+            loadSpace()
+        }
+    }, {immediate: true, once: true})
 })
 
 /**

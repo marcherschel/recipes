@@ -147,7 +147,8 @@ const router = useRouter()
 
 onMounted(() => {
     useUserPreferenceStore().init().then(() => {
-        if (useUserPreferenceStore().activeSpace.spaceSetupCompleted != undefined && !useUserPreferenceStore().activeSpace.spaceSetupCompleted) {
+        // only the space owner can complete the space setup, regular members would only run into permission errors
+        if (useUserPreferenceStore().activeSpace.spaceSetupCompleted != undefined && !useUserPreferenceStore().activeSpace.spaceSetupCompleted && useUserPreferenceStore().isActiveSpaceOwner) {
             router.push({name: 'WelcomePage'})
         }
     })
@@ -164,14 +165,14 @@ onMounted(() => {
  * global title update handler, might be overridden by page specific handlers
  */
 router.afterEach((to, from) => {
-    if (to.name == 'StartPage' && useUserPreferenceStore().initCompleted && !useUserPreferenceStore().activeSpace.spaceSetupCompleted != undefined && !useUserPreferenceStore().activeSpace.spaceSetupCompleted && useUserPreferenceStore().activeSpace.createdBy.id! == useUserPreferenceStore().userSettings.user.id!) {
+    if (to.name == 'StartPage' && useUserPreferenceStore().initCompleted && useUserPreferenceStore().activeSpace.spaceSetupCompleted != undefined && !useUserPreferenceStore().activeSpace.spaceSetupCompleted && useUserPreferenceStore().isActiveSpaceOwner) {
         router.push({name: 'WelcomePage'})
     } else if (to.name == 'StartPage' &&
         useUserPreferenceStore().initCompleted &&
         useUserPreferenceStore().activeSpace.spaceSetupCompleted &&
-        !useUserPreferenceStore().activeSpace.householdSetupCompleted != undefined &&
+        useUserPreferenceStore().activeSpace.householdSetupCompleted != undefined &&
         !useUserPreferenceStore().activeSpace.householdSetupCompleted &&
-        useUserPreferenceStore().activeSpace.createdBy.id! == useUserPreferenceStore().userSettings.user.id! &&
+        useUserPreferenceStore().isActiveSpaceOwner &&
         useUserPreferenceStore().activeUserSpace?.household == undefined ) {
         router.push({name: 'HouseholdPage'})
     }
