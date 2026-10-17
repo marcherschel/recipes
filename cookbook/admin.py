@@ -368,6 +368,12 @@ admin.site.register(ViewLog, ViewLogAdmin)
 
 
 class InviteLinkAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not settings.NO_INVITES and super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return not settings.NO_INVITES and super().has_change_permission(request, obj)
+
     list_display = (
         'group', 'valid_until', 'space',
         'created_by', 'created_at', 'used_by'

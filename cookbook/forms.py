@@ -180,6 +180,16 @@ class AllAuthSocialSignupForm(SocialSignupForm):
             self.fields.pop('terms')
 
     def signup(self, request, user):
+        from cookbook.helper.single_tenant import ensure_user_in_single_tenant, is_single_tenant
+        if is_single_tenant():
+            # user already joined the single tenant space on creation, never assign any other space
+            user_space = ensure_user_in_single_tenant(user)
+            if user_space and settings.SOCIAL_DEFAULT_ACCESS:
+                group = Group.objects.filter(name=settings.SOCIAL_DEFAULT_GROUP).first()
+                if group and not user_space.groups.filter(name='admin').exists():
+                    user_space.groups.set([group])
+            return
+
         if settings.SOCIAL_DEFAULT_ACCESS:
             with scopes_disabled():
                 space = Space.objects.first()

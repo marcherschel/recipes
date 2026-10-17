@@ -14,6 +14,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "recipes.settings")
 
 _application = get_wsgi_application()
 
+# single tenant mode is mandatory: abort startup (listing all spaces) if SINGLE_TENANT_ID is missing/invalid,
+# otherwise force every user into the configured space
+from cookbook.helper.single_tenant import run_startup_check  # noqa: E402
+
+run_startup_check()
+
 
 # allows proxy servers to serve application at a subfolder
 # NGINX config example is included in nginx/conf.d
