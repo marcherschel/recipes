@@ -88,6 +88,12 @@ echo "Migrating database"
 
 python manage.py migrate
 
+echo "Enforcing single tenant mode (SINGLE_TENANT_ID=${SINGLE_TENANT_ID})"
+if ! python manage.py single_tenant; then
+    echo "Shutting down container."
+    exit 1
+fi
+
 if [ "${PLUGINS_BUILD}" -eq 1 ]; then
     echo "Running yarn build at startup because PLUGINS_BUILD is enabled"
     python plugin.py

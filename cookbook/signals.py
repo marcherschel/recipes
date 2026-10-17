@@ -165,3 +165,11 @@ def invalidate_household_cache_on_save(sender, instance=None, **kwargs):
 def invalidate_household_cache_on_delete(sender, instance=None, **kwargs):
     if instance and instance.household_id:
         caches['default'].delete(f'household_user_ids_{instance.space_id}_{instance.household_id}')
+
+
+@receiver(post_save, sender=User)
+def join_single_tenant_space(sender, instance=None, created=False, raw=False, **kwargs):
+    # every newly created user (local/social/LDAP/remote user signup, admin, ...) joins the single tenant space
+    if created and not raw:
+        from cookbook.helper.single_tenant import ensure_user_in_single_tenant
+        ensure_user_in_single_tenant(instance)

@@ -29,6 +29,7 @@ from drf_spectacular.views import SpectacularRedocView, SpectacularSwaggerView
 from cookbook.forms import Recipe, SpaceCreateForm, SpaceJoinForm, User, UserCreateForm
 from cookbook.helper.HelperFunctions import str2bool
 from cookbook.helper.permission_helper import CustomIsGuest, GroupRequiredMixin, has_group_permission, share_link_valid, switch_user_active_space
+from cookbook.helper.single_tenant import ensure_user_in_single_tenant, get_single_tenant_id, is_single_tenant
 from cookbook.models import InviteLink, ShareLink, Space, UserSpace
 from cookbook.templatetags.theming_tags import get_theming_values
 from cookbook.version_info import VERSION_INFO
@@ -42,7 +43,7 @@ def index(request, path=None, resource=None):
             if User.objects.count() < 1 and 'django.contrib.auth.backends.RemoteUserBackend' not in settings.AUTHENTICATION_BACKENDS:
                 return HttpResponseRedirect(reverse_lazy('view_setup'))
 
-    if 'signup_token' in request.session:
+    if 'signup_token' in request.session and not settings.NO_INVITES:
         value = request.session['signup_token']
         del request.session['signup_token']
         request.session.modified = True
@@ -85,6 +86,11 @@ def no_groups(request):
 
 @login_required
 def space_overview(request):
+    if is_single_tenant():
+        # there is only one space, nothing to create / join / choose
+        ensure_user_in_single_tenant(request.user)
+        return HttpResponseRedirect(reverse('index'))
+
     if request.POST:
         create_form = SpaceCreateForm(request.POST, prefix='create')
         join_form = SpaceJoinForm(request.POST, prefix='join')
@@ -379,6 +385,11 @@ def setup(request):
 
 
 def invite_link(request, token):
+    if settings.NO_INVITES:
+        request.session.pop('signup_token', None)
+        messages.add_message(request, messages.ERROR, _('Invites are disabled on this instance, please sign up using LDAP or social login.'))
+        return HttpResponseRedirect(reverse('index'))
+
     with scopes_disabled():
         try:
             token = UUID(token, version=4)
@@ -387,6 +398,10 @@ def invite_link(request, token):
             return HttpResponseRedirect(reverse('index'))
 
         if link := InviteLink.objects.filter(valid_until__gte=timezone.now().date(), used_by=None, uuid=token).first():
+            if is_single_tenant() and link.space_id != get_single_tenant_id():
+                messages.add_message(request, messages.ERROR, _('This invite link belongs to a space that is no longer in use on this instance.'))
+                return HttpResponseRedirect(reverse('index'))
+
             if request.user.is_authenticated:
                 if not request.user.userspace_set.filter(space=link.space).exists():
                     if not link.reusable:
@@ -397,6 +412,19 @@ def invite_link(request, token):
                     user_space = UserSpace.objects.create(user=request.user, space=link.space, internal_note=link.internal_note, invite_link=link, household=link.household, active=True)
 
                     user_space.groups.add(link.group)
+                elif is_single_tenant():
+                    # user was already force-joined on creation, apply the invites group/household if it never redeemed one
+                    user_space = request.user.userspace_set.filter(space=link.space).first()
+                    if user_space.invite_link is None and not user_space.groups.filter(name='admin').exists():
+                        if not link.reusable:
+                            link.used_by = request.user
+                            link.save()
+                        user_space.invite_link = link
+                        user_space.internal_note = link.internal_note
+                        if link.household:
+                            user_space.household = link.household
+                        user_space.save()
+                        user_space.groups.set([link.group])
 
                 return HttpResponseRedirect(reverse('index'))
             else:

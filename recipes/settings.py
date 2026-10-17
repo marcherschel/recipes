@@ -56,6 +56,15 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING")
 SOCIAL_DEFAULT_ACCESS = bool(int(os.getenv('SOCIAL_DEFAULT_ACCESS', False)))
 SOCIAL_DEFAULT_GROUP = os.getenv('SOCIAL_DEFAULT_GROUP', 'guest')
 
+# Single tenant mode: every user is forced to be a member of exactly this space.
+# Required for server startup (see cookbook/helper/single_tenant.py); left unset only in tests/tooling.
+SINGLE_TENANT_ID = os.getenv('SINGLE_TENANT_ID', '').strip() or None
+# group new / migrated members receive in the single tenant space
+SINGLE_TENANT_DEFAULT_GROUP = os.getenv('SINGLE_TENANT_DEFAULT_GROUP', 'user')
+# when enabled invite links can neither be created nor redeemed and local signup is closed,
+# new users can only come from LDAP / social (or remote user) login
+NO_INVITES = os.getenv('YOU_ARE_NOT_INVITING_ANYONE_EVER', '').strip().lower() in ('1', 'true', 'yes', 'on')
+
 HIDE_LOGIN_FORM = bool(int(os.getenv('HIDE_LOGIN_FORM', False)))
 
 SPACE_DEFAULT_MAX_RECIPES = int(os.getenv('SPACE_DEFAULT_MAX_RECIPES', 0))

@@ -15,6 +15,13 @@ class CookbookConfig(AppConfig):
     def ready(self):
         import cookbook.signals  # noqa
 
+        # development server: enforce single tenant mode in the serving process (not in the autoreloader parent)
+        import os
+        import sys
+        if len(sys.argv) > 1 and sys.argv[1] == 'runserver' and (os.environ.get('RUN_MAIN') == 'true' or '--noreload' in sys.argv):
+            from cookbook.helper.single_tenant import run_startup_check
+            run_startup_check()
+
         if not settings.DISABLE_EXTERNAL_CONNECTORS:
             from cookbook.connectors.connector_manager import ConnectorManager  # Needs to be here to prevent loading race condition of oauth2 modules in models.py
             handler = ConnectorManager()

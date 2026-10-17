@@ -8,8 +8,9 @@ from rest_framework.exceptions import AuthenticationFailed
 
 
 from cookbook.helper.permission_helper import create_space_for_user
+from cookbook.helper.single_tenant import ensure_user_in_single_tenant, get_single_tenant_id, is_single_tenant
 from cookbook.views import views
-from recipes import settings
+from django.conf import settings
 
 
 class ScopeMiddleware:
@@ -55,6 +56,10 @@ class ScopeMiddleware:
             # get active user space, if for some reason more than one space is active select first (group permission checks will fail, this is not intended at this point)
             user_space = request.user.userspace_set.filter(active=True).first()
 
+            if is_single_tenant() and (not user_space or user_space.space_id != get_single_tenant_id()):
+                # single tenant mode: never create or use any other space, force the user into the configured one
+                user_space = ensure_user_in_single_tenant(request.user) or user_space
+
             if not user_space and request.user.userspace_set.count() > 0:
                 # if the users has a userspace but nothing is active, activate the first one
                 user_space = request.user.userspace_set.first()
@@ -63,7 +68,7 @@ class ScopeMiddleware:
                     user_space.save()
 
             if not user_space:
-                if 'signup_token' in request.session:
+                if 'signup_token' in request.session and not settings.NO_INVITES:
                     # if user is authenticated, has no space but a signup token (InviteLink) is present, redirect to invite link logic
                     return HttpResponseRedirect(reverse('view_invite', args=[request.session.pop('signup_token', '')]))
                 else:

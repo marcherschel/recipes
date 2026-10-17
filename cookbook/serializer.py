@@ -20,8 +20,9 @@ from drf_writable_nested import UniqueFieldsMixin
 from drf_writable_nested import WritableNestedModelSerializer as WNMS
 from oauth2_provider.models import AccessToken
 from PIL import Image
+from django.conf import settings as django_settings
 from rest_framework import serializers
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.fields import IntegerField
 
 from cookbook.helper.CustomStorageClass import CachedS3Boto3Storage
@@ -29,6 +30,7 @@ from cookbook.helper.HelperFunctions import str2bool
 from cookbook.helper.ai_helper import get_monthly_token_usage
 from cookbook.helper.image_processing import is_file_type_allowed
 from cookbook.helper.permission_helper import above_space_limit, create_space_for_user, get_household_user_ids, CustomRecipePermission
+from cookbook.helper.single_tenant import is_single_tenant
 from cookbook.helper.property_helper import FoodPropertyHelper
 from cookbook.helper.shopping_helper import RecipeShoppingEditor
 from cookbook.helper.unit_conversion_helper import UnitConversionHelper
@@ -439,6 +441,8 @@ class SpaceSerializer(WritableNestedModelSerializer):
             return 0
 
     def create(self, validated_data):
+        if is_single_tenant():
+            raise serializers.ValidationError(_('Creating additional spaces is disabled on this instance.'))
         if Space.objects.filter(created_by=self.context['request'].user).count() >= self.context['request'].user.userpreference.max_owned_spaces:
             raise serializers.ValidationError(
                 _('You have the reached the maximum amount of spaces that can be owned by you.') + f' ({self.context['request'].user.userpreference.max_owned_spaces})')
@@ -1833,6 +1837,8 @@ class InviteLinkSerializer(WritableNestedModelSerializer):
         return getattr(obj, '_email_sent', False)
 
     def create(self, validated_data):
+        if django_settings.NO_INVITES:
+            raise PermissionDenied(_('Invites are disabled on this instance, users can only sign up using LDAP or social login.'))
         validated_data['created_by'] = self.context['request'].user
         validated_data['space'] = self.context['request'].space
         obj = super().create(validated_data)

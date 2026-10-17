@@ -30,6 +30,9 @@ class AllAuthCustomAdapter(DefaultAccountAdapter):
 
         # Local signup form: require ENABLE_SIGNUP or a valid invite token
         if view_name == 'account_signup':
+            if settings.NO_INVITES:
+                # users can only come from LDAP / social login
+                return False
             signup_token = False
             with scopes_disabled():
                 if 'signup_token' in request.session and InviteLink.objects.filter(

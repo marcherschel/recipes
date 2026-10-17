@@ -76,7 +76,7 @@ from cookbook.helper.image_processing import handle_image
 from cookbook.helper.ingredient_parser import IngredientParser
 from cookbook.helper.open_data_importer import OpenDataImporter
 from cookbook.helper.permission_helper import (CustomIsAdmin, CustomIsOwner, CustomIsOwnerReadOnly, CustomIsShared,
-                                               CustomIsSpaceOwner, CustomIsUser, CustomIsGuest,
+                                               CustomIsSpaceOwner, CustomIsUser, CustomIsGuest, InvitesAllowed,
                                                CustomRecipePermission, CustomTokenHasReadWriteScope,
                                                CustomTokenHasScope, CustomUserPermission, IsReadOnlyDRF,
                                                above_space_limit,
@@ -2499,7 +2499,7 @@ class AutomationViewSet(LoggingMixin, StandardFilterModelViewSet):
 class InviteLinkViewSet(LoggingMixin, StandardFilterModelViewSet, DeleteRelationMixing):
     queryset = InviteLink.objects
     serializer_class = InviteLinkSerializer
-    permission_classes = [CustomIsSpaceOwner & CustomIsAdmin & CustomTokenHasReadWriteScope]
+    permission_classes = [CustomIsSpaceOwner & CustomIsAdmin & CustomTokenHasReadWriteScope & InvitesAllowed]
     pagination_class = DefaultPagination
 
     def get_queryset(self):

@@ -37,3 +37,6 @@ for y in UNINSTALL_INSTALLED_APPS:
 DISABLE_EXTERNAL_CONNECTORS = True
 
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
+# tests exercise the multi space behaviour, single tenant mode is enabled explicitly where needed
+SINGLE_TENANT_ID = None

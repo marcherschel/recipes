@@ -360,6 +360,34 @@ SOCIAL_DEFAULT_ACCESS = 1
 SOCIAL_DEFAULT_GROUP=guest
 ```
 
+#### Single Tenant
+
+> required - id of an existing space (or the id the first space should get on a fresh install)
+
+All users share one space. On every startup all users are forced into this space as members
+(group `SINGLE_TENANT_DEFAULT_GROUP`, existing groups in that space are kept) and removed from every other space.
+All other spaces are handed over to an inactive placeholder user (`single-tenant-placeholder-space-<id>`) so no data is lost.
+New users (local, social, LDAP, remote user, admin) automatically join this space, creating new spaces is disabled.
+If the variable is missing or invalid startup fails and all existing spaces are listed
+(also available via `python manage.py single_tenant --list`).
+
+```
+SINGLE_TENANT_ID=1
+SINGLE_TENANT_DEFAULT_GROUP=user
+```
+
+#### Disable Invites
+
+> default `false` - options `true`, `false`
+
+When enabled nobody can invite users: invite links can not be created or changed (API and admin, existing ones can still be listed/deleted),
+existing links can not be redeemed and the local signup form is closed (even with `ENABLE_SIGNUP=1`).
+New users can only come from LDAP or social login (and remote user auth if configured).
+
+```
+YOU_ARE_NOT_INVITING_ANYONE_EVER=true
+```
+
 #### Enable Signup
 
 > default `0` - options `0`, `1`

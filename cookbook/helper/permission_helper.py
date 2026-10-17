@@ -274,6 +274,18 @@ class CustomIsOwnerDestroyOnly(CustomIsOwner):
         return super().has_object_permission(request, view, obj) and request.method == 'DELETE'
 
 
+class InvitesAllowed(permissions.BasePermission):
+    """
+    blocks creating/changing invite links when YOU_ARE_NOT_INVITING_ANYONE_EVER is set (listing/deleting old ones stays possible)
+    """
+    message = _('Invites are disabled on this instance, users can only sign up using LDAP or social login.')
+
+    def has_permission(self, request, view):
+        if settings.NO_INVITES:
+            return request.method in SAFE_METHODS or request.method == 'DELETE'
+        return True
+
+
 class CustomIsSpaceOwner(permissions.BasePermission):
     """
     Custom permission class for django rest framework views
@@ -541,6 +553,11 @@ class IsCreateDRF(permissions.BasePermission):
 
 
 def create_space_for_user(user, name=None):
+    from cookbook.helper.single_tenant import ensure_user_in_single_tenant, is_single_tenant
+    if is_single_tenant():
+        # never create new spaces in single tenant mode, the user joins the shared space instead
+        return ensure_user_in_single_tenant(user)
+
     with scopes_disabled():
         if not name:
             name = f"{user.username}'s Space"
