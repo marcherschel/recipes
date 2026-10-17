@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    # documentation only changes never build an image (skipped only if *all* changed files match)
+    paths-ignore:
+      - '**.md'
 
 env:
   IMAGE_NAME: mynttt/tandoor-single-tenant
